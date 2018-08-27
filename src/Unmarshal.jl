@@ -26,7 +26,7 @@ function unmarshal(DT :: Type, parsedJson :: String, verbose :: Bool = false, ve
     if DT <: Array
         [parsedJson]
     else
-        DT(parsedJson)
+        parsedJson
     end
 end
 
@@ -85,7 +85,7 @@ function unmarshal(DT :: Type, parsedJson :: AbstractDict, verbose :: Bool = fal
         DTNext = fieldtype(DT,iter)
  #       @show iter, DTNext, !haskey(parsedJson, string(iter))
 
-        if !haskey(parsedJson, string(iter)) 
+        if !haskey(parsedJson, string(iter))
             # check whether DTNext is compatible with any scheme for missing values
             val = if DTNext <: Nullable
                 DTNext()
@@ -123,9 +123,9 @@ function unmarshal(DT :: Type{T}, parsedJson :: AbstractDict, verbose :: Bool = 
     end
     val = DT()
     for iter in keys(parsedJson)
-        tmp = unmarshal(valtype(DT), parsedJson[iter], verbose, verboseLvl) 
+        tmp = unmarshal(valtype(DT), parsedJson[iter], verbose, verboseLvl)
         if keytype(DT) <: AbstractString
-            val[iter] = tmp 
+            val[iter] = tmp
         else
             try
                 val[unmarshal(keytype(DT),JSON.parse(iter),verbose, verboseLvl)] = tmp # Use JSON.parse and Unmarshal to cast from type of iter to ketype(DT)
@@ -141,7 +141,9 @@ unmarshal(::Type{T}, x::Number, verbose :: Bool = false, verboseLvl :: Int = 0) 
 unmarshal(::Type{Nullable{T}}, x, verbose :: Bool = false, verboseLvl :: Int = 0) where T = Nullable(unmarshal(T, x))
 unmarshal(::Type{Nullable{T}}, x::Nothing, verbose :: Bool = false, verboseLvl :: Int = 0) where T = Nullable{T}()
 unmarshal(::Type{Union{T,Missing}}, x, verbose :: Bool = false, verboseLvl :: Int = 0) where T = unmarshal(T, x, verbose, verboseLvl)
+unmarshal(::Type{Union{T,Missing}}, x::Nothing, verbose :: Bool = false, verboseLvl :: Int = 0) where T = missing
 unmarshal(::Type{Union{T,Nothing}}, x, verbose :: Bool = false, verboseLvl :: Int = 0) where T = unmarshal(T, x, verbose, verboseLvl)
+unmarshal(::Type{Union{T,Nothing}}, x::Nothing, verbose :: Bool = false, verboseLvl :: Int = 0) where T = nothing
 
 unmarshal(T::Type, x, verbose :: Bool = false, verboseLvl :: Int = 0) =
     throw(ArgumentError("no unmarshal function defined to convert $(typeof(x)) to $(T); consider providing a specialization"))
